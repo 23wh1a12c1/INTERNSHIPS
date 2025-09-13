@@ -1,0 +1,96 @@
+
+
+'''
+
+import streamlit as st
+import os
+import tempfile
+from pytube import YouTube
+from moviepy.editor import VideoFileClip, concatenate_videoclips
+import ffmpeg
+
+st.set_page_config(page_title="🎬 Reelify", layout="centered")
+st.title("🎬 Reelify: Create Smart Vertical Reels")
+
+input_path = None
+video_ready = False
+
+# Step 1: Upload or YouTube
+input_method = st.radio("📥 Select input method", ["Upload File", "YouTube URL"])
+
+if input_method == "Upload File":
+    file = st.file_uploader("📂 Upload video", type=["mp4", "mov", "avi", "mkv"])
+    if file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp:
+            temp.write(file.read())
+            input_path = temp.name
+            video_ready = True
+
+elif input_method == "YouTube URL":
+    url = st.text_input("🔗 Paste YouTube video link")
+    if url and st.button("Download Video"):
+        try:
+            yt = YouTube(url)
+            stream = yt.streams.filter(progressive=True, file_extension="mp4").first()
+            temp_dir = tempfile.mkdtemp()
+            input_path = stream.download(output_path=temp_dir)
+            st.success("✅ Video downloaded")
+            video_ready = True
+        except Exception as e:
+            st.error(f"❌ Download failed: {e}")
+
+# Step 2: Show and process
+if video_ready:
+    st.video(input_path)
+
+    st.subheader("🎧 Extracting audio...")
+    os.makedirs("output", exist_ok=True)
+    audio_path = os.path.join("output", "audio.wav")
+
+    try:
+        ffmpeg.input(input_path).output(audio_path, **{"q:a": 0, "map": "a"}).run(overwrite_output=True)
+        st.audio(audio_path)
+        st.success("✅ Audio extracted")
+    except Exception as e:
+        st.error(f"❌ Audio extraction error: {e}")
+
+    st.subheader("📱 Creating smart vertical reel...")
+
+    try:
+        clip = VideoFileClip(input_path)
+        duration = clip.duration
+
+        # Generate smart summary
+        clips = []
+        if duration >= 15:
+            clips.append(clip.subclip(0, 5))
+            clips.append(clip.subclip(duration / 2 - 2.5, duration / 2 + 2.5))
+            clips.append(clip.subclip(duration - 5, duration))
+        else:
+            clips.append(clip.subclip(0, duration))
+
+        final_clip = concatenate_videoclips(clips)
+
+        temp_output = os.path.join("output", "temp_summary.mp4")
+        vertical_output = os.path.join("output", "smart_vertical_reel.mp4")
+
+        final_clip.write_videofile(temp_output, codec="libx264", audio_codec="aac")
+
+        # Convert to vertical using ffmpeg
+        ffmpeg.input(temp_output).output(
+            vertical_output,
+            vf="scale=1080:-2,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+            vcodec="libx264", acodec="aac", format="mp4"
+        ).run(overwrite_output=True)
+
+        st.video(vertical_output)
+        st.success("✅ Vertical reel created!")
+
+        with open(vertical_output, "rb") as f:
+            st.download_button("⬇️ Download Reel", data=f, file_name="smart_reel.mp4", mime="video/mp4")
+
+    except Exception as e:
+        st.error(f"❌ Reel creation error: {e}")
+
+
+'''
