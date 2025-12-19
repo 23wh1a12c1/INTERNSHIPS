@@ -19,6 +19,15 @@
 
 </div>
 
+# AI Enabled Real-Time AI Sales Call Assistant
+
+This project is a high-performance AI Sales Assistant designed to provide real-time conversation strategies, sentiment analysis, and objection handling for sales professionals.
+
+### Key Features:
+* **Context-Aware:** Recognizes the stage of the sales call.
+* **Real-Time Strategy:** Suggests the best response based on customer objections.
+* **Professional Grade:** Built with LangChain and GPT-4.
+
 This repo is an implementation of a **context-aware** AI Agent for Sales using LLMs and can work across voice, email and texting (SMS, WhatsApp, WeChat, Weibo, Telegram, etc.). 
 
 SalesGPT is *context-aware*, which means it can understand what stage of a sales conversation it is in and act accordingly.
